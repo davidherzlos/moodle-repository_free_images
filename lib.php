@@ -49,7 +49,7 @@ class repository_free_images extends repository {
      *
      * @return int
      */
-    public function get_maxwidth() {
+    private function get_maxwidth(): mixed {
         $param = optional_param('free_images_maxwidth', 0, PARAM_INT);
         $pref = get_user_preferences('repository_free_images_maxwidth', FREE_IMAGES_IMAGE_SIDE_LENGTH);
         if ($param > 0 && $param != $pref) {
@@ -67,7 +67,7 @@ class repository_free_images extends repository {
      *
      * @return int
      */
-    public function get_maxheight() {
+    private function get_maxheight(): mixed {
         $param = optional_param('free_images_maxheight', 0, PARAM_INT);
         $pref = get_user_preferences('repository_free_images_maxheight', FREE_IMAGES_IMAGE_SIDE_LENGTH);
         if ($param > 0 && $param != $pref) {
@@ -76,8 +76,12 @@ class repository_free_images extends repository {
         }
         return $pref;
     }
-
-    public function get_listing($path = '', $page = '') {
+    
+    /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     *
+     */
+    public function get_listing($path = '', $page = ''): array {
         $client = new free_images;
         $list = array();
         $list['page'] = (int)$page;
@@ -99,8 +103,11 @@ class repository_free_images extends repository {
         }
         return $list;
     }
-   // login
-    public function check_login() {
+
+    /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     */
+    public function check_login() bool {
         global $SESSION;
         $this->keyword = optional_param('free_images_keyword', '', PARAM_RAW);
         if (empty($this->keyword)) {
@@ -118,9 +125,13 @@ class repository_free_images extends repository {
         }
         return !empty($this->keyword);
     }
-    // if check_login returns false,
-    // this function will be called to print a login form.
-    public function print_login() {
+
+    /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     * if check_login returns false,
+     * this function will be called to print a login form.
+     */ 
+    public function print_login(): mixed {
         $keyword = new stdClass();
         $keyword->label = get_string('keyword', 'repository_free_images').': ';
         $keyword->id    = 'input_text_keyword';
@@ -159,43 +170,47 @@ class repository_free_images extends repository {
 EOD;
         }
     }
-    //search
-    // if this plugin support global search, if this function return
-    // true, search function will be called when global searching working
-    public function global_search() {
+
+    /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     * search 
+     * if this plugin support global search, if this function return
+     * true, search function will be called when global searching working
+     */
+    public function global_search(): bool {
         return false;
     }
-    public function search($search_text, $page = 0) {
+
+    /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     */
+    public function search($search_text, $page = 0): mixed  {
         $client = new free_images;
         $search_result = array();
         $search_result['list'] = $client->search_images($search_text);
         return $search_result;
     }
-    // when logout button on file picker is clicked, this function will be
-    // called.
-    public function logout() {
-        return $this->print_login();
-    }
-    public function supported_returntypes() {
-        return (FILE_INTERNAL | FILE_EXTERNAL);
-    }
 
     /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     * 
      * Return the source information
      *
      * @param stdClass $url
      * @return string|null
      */
-    public function get_file_source_info($url) {
+    public function get_file_source_info($url): string|null {
         return $url;
     }
 
     /**
+     * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
+     *
      * Is this repository accessing private data?
      *
      * @return bool
      */
-    public function contains_private_data() {
+    public function contains_private_data(): bool {
         return false;
     }
 }
