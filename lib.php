@@ -107,7 +107,7 @@ class repository_free_images extends repository {
     /**
      * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
      */
-    public function check_login() bool {
+    public function check_login(): bool {
         global $SESSION;
         $this->keyword = optional_param('free_images_keyword', '', PARAM_RAW);
         if (empty($this->keyword)) {
