@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -21,6 +20,7 @@
  *
  * @author Dongsheng Cai <dongsheng@moodle.com>, Raul Kern <raunator@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
+ * @package repository_free_images
  */
 
 define('FREE_IMAGES_THUMBS_PER_PAGE', 24);
@@ -30,7 +30,7 @@ define('FREE_IMAGES_THUMB_SIZE', 120);
 
 class free_images {
     private $_conn  = null;
-    private $_param = array();
+    private $_param = [];
 
     /** @var string API URL. */
     protected $api;
@@ -52,7 +52,7 @@ class free_images {
         }
         $this->_param['format'] = 'php';
         $this->_param['redirects'] = true;
-        $this->_conn = new curl(array('cache'=>true, 'debug'=>false));
+        $this->_conn = new curl(['cache' => true, 'debug' => false]);
     }
     public function login($user, $pass) {
         $this->_param['action']   = 'login';
@@ -71,11 +71,11 @@ class free_images {
     }
     public function logout() {
         $this->_param['action']   = 'logout';
-        $content = $this->_conn->post($this->api, $this->_param);
+        $this->_conn->post($this->api, $this->_param);
         return;
     }
     public function get_image_url($titles) {
-        $image_urls = array();
+        $imageurls = [];
         $this->_param['action'] = 'query';
         if (is_array($titles)) {
             foreach ($titles as $title) {
@@ -90,13 +90,13 @@ class free_images {
         $result = unserialize($content);
         foreach ($result['query']['pages'] as $page) {
             if (!empty($page['imageinfo'][0]['url'])) {
-                $image_urls[] = $page['imageinfo'][0]['url'];
+                $imageurls[] = $page['imageinfo'][0]['url'];
             }
         }
-        return $image_urls;
+        return $imageurls;
     }
     public function get_images_by_page($title) {
-        $image_urls = array();
+        $imageurls = [];
         $this->_param['action'] = 'query';
         $this->_param['generator'] = 'images';
         $this->_param['titles'] = urldecode($title);
@@ -106,10 +106,10 @@ class free_images {
         $result = unserialize($content);
         if (!empty($result['query']['pages'])) {
             foreach ($result['query']['pages'] as $page) {
-                $image_urls[$page['title']] = $page['imageinfo'][0]['url'];
+                $imageurls[$page['title']] = $page['imageinfo'][0]['url'];
             }
         }
-        return $image_urls;
+        return $imageurls;
     }
     /**
      * Generate thumbnail URL from image URL.
@@ -119,34 +119,33 @@ class free_images {
      * @param int $orig_height
      * @param int $thumb_width
      * @param bool $force When true, forces the generation of a thumb URL.
-     * @global object OUTPUT
      * @return string
      */
-    public function get_thumb_url($image_url, $orig_width, $orig_height, $thumb_width = 75, $force = false) {
+    public function get_thumb_url($imageurl, $origwidth, $origheight, $thumbwidth = 75, $force = false) {
         global $OUTPUT;
 
-        if (!$force && $orig_width <= $thumb_width && $orig_height <= $thumb_width) {
-            return $image_url;
+        if (!$force && $origwidth <= $thumbwidth && $origheight <= $thumbwidth) {
+            return $imageurl;
         } else {
-            $thumb_url = '';
-            $commons_main_dir = 'https://upload.wikimedia.org/wikipedia/commons/';
-            if ($image_url) {
-                $short_path = str_replace($commons_main_dir, '', $image_url);
-                $extension = strtolower(pathinfo($short_path, PATHINFO_EXTENSION));
-                if (strcmp($extension, 'gif') == 0) {  //no thumb for gifs
+            $thumburl = '';
+            $commonsmaindir = 'https://upload.wikimedia.org/wikipedia/commons/';
+            if ($imageurl) {
+                $shortpath = str_replace($commonsmaindir, '', $imageurl);
+                $extension = strtolower(pathinfo($shortpath, PATHINFO_EXTENSION));
+                if (strcmp($extension, 'gif') == 0) {  // No thumb for gifs.
                     return $OUTPUT->image_url(file_extension_icon('.gif'))->out(false);
                 }
-                $dir_parts = explode('/', $short_path);
-                $file_name = end($dir_parts);
-                if ($orig_height > $orig_width) {
-                    $thumb_width = round($thumb_width * $orig_width/$orig_height);
+                $dirparts = explode('/', $shortpath);
+                $filename = end($dirparts);
+                if ($origheight > $origwidth) {
+                    $thumbwidth = round($thumbwidth * $origwidth / $origheight);
                 }
-                $thumb_url = $commons_main_dir . 'thumb/' . implode('/', $dir_parts) . '/'. $thumb_width .'px-' . $file_name;
-                if (strcmp($extension, 'svg') == 0) {  //png thumb for svg-s
-                    $thumb_url .= '.png';
+                $thumburl = $commonsmaindir . 'thumb/' . implode('/', $dirparts) . '/'. $thumbwidth .'px-' . $filename;
+                if (strcmp($extension, 'svg') == 0) {  // Png thumb for svg-s.
+                    $thumburl .= '.png';
                 }
             }
-            return $thumb_url;
+            return $thumburl;
         }
     }
 
@@ -158,9 +157,9 @@ class free_images {
      * @param array $params additional query params
      * @return array
      */
-    public function search_images($keyword, $page = 0, $params = array()) {
+    public function search_images($keyword, $page = 0, $params = []) {
         global $OUTPUT;
-        $files_array = array();
+        $filesarray = [];
         $this->_param['action'] = 'query';
         $this->_param['generator'] = 'search';
         $this->_param['gsrsearch'] = $keyword;
@@ -170,17 +169,17 @@ class free_images {
         $this->_param['prop']   = 'imageinfo';
         $this->_param['iiprop'] = 'url|dimensions|mime|timestamp|size|user';
         $this->_param += $params;
-        $this->_param += array('iiurlwidth' => FREE_IMAGES_IMAGE_SIDE_LENGTH,
-            'iiurlheight' => FREE_IMAGES_IMAGE_SIDE_LENGTH);
-        //didn't work with POST
+        $this->_param += ['iiurlwidth' => FREE_IMAGES_IMAGE_SIDE_LENGTH,
+            'iiurlheight' => FREE_IMAGES_IMAGE_SIDE_LENGTH];
+        // Didn't work with POST.
         $content = $this->_conn->get($this->api, $this->_param);
         $result = unserialize($content);
         if (!empty($result['query']['pages'])) {
             foreach ($result['query']['pages'] as $page) {
                 $title = $page['title'];
-                $file_type = $page['imageinfo'][0]['mime'];
-                $image_types = array('image/jpeg', 'image/png', 'image/gif', 'image/svg+xml');
-                if (in_array($file_type, $image_types)) {  //is image
+                $filetype = $page['imageinfo'][0]['mime'];
+                $imagetypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
+                if (in_array($filetype, $imagetypes)) {  // Is image.
                     $extension = pathinfo($title, PATHINFO_EXTENSION);
                     $issvg = strcmp($extension, 'svg') == 0;
 
@@ -191,12 +190,12 @@ class free_images {
 
                     // The thumbnail (max size requested) is smaller than the original size, we will use the thumbnail.
                     if ($page['imageinfo'][0]['thumbwidth'] < $page['imageinfo'][0]['width']) {
-                        $attrs = array(
-                            //upload scaled down image
+                        $attrs = [
+                            // Upload scaled down image.
                             'source' => $page['imageinfo'][0]['thumburl'],
                             'image_width' => $page['imageinfo'][0]['thumbwidth'],
-                            'image_height' => $page['imageinfo'][0]['thumbheight']
-                        );
+                            'image_height' => $page['imageinfo'][0]['thumbheight'],
+                        ];
                         if ($attrs['image_width'] <= FREE_IMAGES_THUMB_SIZE && $attrs['image_height'] <= FREE_IMAGES_THUMB_SIZE) {
                             $attrs['realthumbnail'] = $attrs['source'];
                         }
@@ -204,14 +203,14 @@ class free_images {
                             $attrs['realicon'] = $attrs['source'];
                         }
 
-                    // We use the original file.
+                        // We use the original file.
                     } else {
-                        $attrs = array(
-                            //upload full size image
+                        $attrs = [
+                            // Upload full size image.
                             'image_width' => $page['imageinfo'][0]['width'],
                             'image_height' => $page['imageinfo'][0]['height'],
-                            'size' => $page['imageinfo'][0]['size']
-                        );
+                            'size' => $page['imageinfo'][0]['size'],
+                        ];
 
                         // We cannot use the source when the file is SVG.
                         if ($issvg) {
@@ -222,27 +221,36 @@ class free_images {
                             $attrs['source'] = $page['imageinfo'][0]['url'];
                         }
                     }
-                    $attrs += array(
-                        'realthumbnail' => $this->get_thumb_url($page['imageinfo'][0]['url'], $page['imageinfo'][0]['width'], $page['imageinfo'][0]['height'], FREE_IMAGES_THUMB_SIZE),
-                        'realicon' => $this->get_thumb_url($page['imageinfo'][0]['url'], $page['imageinfo'][0]['width'], $page['imageinfo'][0]['height'], 24),
+                    $attrs += [
+                        'realthumbnail' => $this->get_thumb_url(
+                            $page['imageinfo'][0]['url'],
+                            $page['imageinfo'][0]['width'],
+                            $page['imageinfo'][0]['height'],
+                            FREE_IMAGES_THUMB_SIZE
+                        ),
+                        'realicon' => $this->get_thumb_url(
+                            $page['imageinfo'][0]['url'],
+                            $page['imageinfo'][0]['width'],
+                            $page['imageinfo'][0]['height'], 24
+                        ),
                         'author' => $page['imageinfo'][0]['user'],
                         'datemodified' => strtotime($page['imageinfo'][0]['timestamp']),
-                        );
-                } else {  // other file types
-                    $attrs = array('source' => $page['imageinfo'][0]['url']);
+                        ];
+                } else {  // Other file types.
+                    $attrs = ['source' => $page['imageinfo'][0]['url']];
                 }
-                $files_array[] = array(
-                    'title'=>substr($title, 5),         //chop off 'File:'
+                $filesarray[] = [
+                    'title' => substr($title, 5),         // Chop off 'File:'.
                     'thumbnail' => $OUTPUT->image_url(file_extension_icon(substr($title, 5)))->out(false),
                     'thumbnail_width' => FREE_IMAGES_THUMB_SIZE,
                     'thumbnail_height' => FREE_IMAGES_THUMB_SIZE,
                     'license' => 'cc-sa',
-                    // the accessible url of the file
-                    'url'=>$page['imageinfo'][0]['descriptionurl']
-                ) + $attrs;
+                    // The accessible url of the file.
+                    'url' => $page['imageinfo'][0]['descriptionurl'],
+                ] + $attrs;
             }
         }
-        return $files_array;
+        return $filesarray;
     }
 
 }

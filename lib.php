@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,6 +22,8 @@
  * @copyright  2010 Dongsheng Cai {@link http://dongsheng.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once(__DIR__ . '/free_images.php');
 
@@ -35,8 +36,8 @@ require_once(__DIR__ . '/free_images.php');
  * @copyright  2009 Dongsheng Cai {@link http://dongsheng.org}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 class repository_free_images extends repository {
+
 
     /** @var string keyword search. */
     protected $keyword;
@@ -76,30 +77,30 @@ class repository_free_images extends repository {
         }
         return $pref;
     }
-    
+
     /**
      * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
      *
      */
     public function get_listing($path = '', $page = ''): array {
         $client = new free_images;
-        $list = array();
+        $list = [];
         $list['page'] = (int)$page;
         if ($list['page'] < 1) {
             $list['page'] = 1;
         }
         $list['list'] = $client->search_images($this->keyword, $list['page'] - 1,
-                array('iiurlwidth' => $this->get_maxwidth(),
-                    'iiurlheight' => $this->get_maxheight()));
+                ['iiurlwidth' => $this->get_maxwidth(),
+                    'iiurlheight' => $this->get_maxheight()]);
         $list['nologin'] = true;
         $list['norefresh'] = true;
         $list['nosearch'] = true;
         if (!empty($list['list'])) {
-            $list['pages'] = -1; // means we don't know exactly how many pages there are but we can always jump to the next page
+            $list['pages'] = -1; // Means we don't know exactly how many pages there are but we can always jump to the next page.
         } else if ($list['page'] > 1) {
-            $list['pages'] = $list['page']; // no images available on this page, this is the last page
+            $list['pages'] = $list['page']; // No images available on this page, this is the last page.
         } else {
-            $list['pages'] = 0; // no paging
+            $list['pages'] = 0; // No paging.
         }
         return $list;
     }
@@ -113,15 +114,15 @@ class repository_free_images extends repository {
         if (empty($this->keyword)) {
             $this->keyword = optional_param('s', '', PARAM_RAW);
         }
-        $sess_keyword = 'free_images_'.$this->id.'_keyword';
+        $sesskeyword = 'free_images_'.$this->id.'_keyword';
         if (empty($this->keyword) && optional_param('page', '', PARAM_RAW)) {
             // This is the request of another page for the last search, retrieve the cached keyword.
-            if (isset($SESSION->{$sess_keyword})) {
-                $this->keyword = $SESSION->{$sess_keyword};
+            if (isset($SESSION->{$sesskeyword})) {
+                $this->keyword = $SESSION->{$sesskeyword};
             }
         } else if (!empty($this->keyword)) {
             // Save the search keyword in the session so we can retrieve it later.
-            $SESSION->{$sess_keyword} = $this->keyword;
+            $SESSION->{$sesskeyword} = $this->keyword;
         }
         return !empty($this->keyword);
     }
@@ -130,7 +131,7 @@ class repository_free_images extends repository {
      * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
      * if check_login returns false,
      * this function will be called to print a login form.
-     */ 
+     */
     public function print_login(): mixed {
         $keyword = new stdClass();
         $keyword->label = get_string('keyword', 'repository_free_images').': ';
@@ -138,26 +139,26 @@ class repository_free_images extends repository {
         $keyword->type  = 'text';
         $keyword->name  = 'free_images_keyword';
         $keyword->value = '';
-        $maxwidth = array(
+        $maxwidth = [
             'label' => get_string('maxwidth', 'repository_free_images').': ',
             'type' => 'text',
             'name' => 'free_images_maxwidth',
             'value' => get_user_preferences('repository_free_images_maxwidth', FREE_IMAGES_IMAGE_SIDE_LENGTH),
-        );
-        $maxheight = array(
+        ];
+        $maxheight = [
             'label' => get_string('maxheight', 'repository_free_images').': ',
             'type' => 'text',
             'name' => 'free_images_maxheight',
             'value' => get_user_preferences('repository_free_images_maxheight', FREE_IMAGES_IMAGE_SIDE_LENGTH),
-        );
+        ];
         if ($this->options['ajax']) {
-            $form = array();
-            $form['login'] = array($keyword, (object)$maxwidth, (object)$maxheight);
+            $form = [];
+            $form['login'] = [$keyword, (object)$maxwidth, (object)$maxheight];
             $form['nologin'] = true;
             $form['norefresh'] = true;
             $form['nosearch'] = true;
-            $form['allowcaching'] = false; // indicates that login form can NOT
-            // be cached in filepicker.js (maxwidth and maxheight are dynamic)
+            $form['allowcaching'] = false; // Indicates that login form can NOT.
+            // Be cached in filepicker.js (maxwidth and maxheight are dynamic).
             return $form;
         } else {
             echo <<<EOD
@@ -173,7 +174,7 @@ EOD;
 
     /**
      * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
-     * search 
+     * search
      * if this plugin support global search, if this function return
      * true, search function will be called when global searching working
      */
@@ -184,22 +185,22 @@ EOD;
     /**
      * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
      */
-    public function search($search_text, $page = 0): mixed  {
+    public function search($searchtext, $page = 0): mixed {
         $client = new free_images;
-        $search_result = array();
-        $search_result['list'] = $client->search_images($search_text);
-        return $search_result;
+        $searchresult = [];
+        $searchresult['list'] = $client->search_images($searchtext);
+        return $searchresult;
     }
 
     /**
      * NOTE: THIS METHOD IS PART OF THE SPECIFIC IMPLEMENTATION.
-     * 
+     *
      * Return the source information
      *
      * @param stdClass $url
      * @return string|null
      */
-    public function get_file_source_info($url): string|null {
+    public function get_file_source_info($url): mixed {
         return $url;
     }
 
@@ -211,6 +212,8 @@ EOD;
      * @return bool
      */
     public function contains_private_data(): bool {
+
         return false;
     }
 }
+

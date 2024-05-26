@@ -17,7 +17,7 @@
 /**
  * Version details
  *
- * @package    repository
+ * @package    repository_free_images
  * @subpackage free_images
  * @copyright  2009 Dongsheng Cai
  * @author     Dongsheng Cai <dongsheng@moodle.com>
@@ -28,4 +28,4 @@ defined('MOODLE_INTERNAL') || die();
 
 $plugin->version   = 2023100900;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2023100400;        // Requires this Moodle version.
-$plugin->component = 'repository_free_images'; // Full name of the plugin (used for diagnostics)
+$plugin->component = 'repository_free_images'; // Full name of the plugin (used for diagnostics).

@@ -23,13 +23,15 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['keyword'] = 'Search for';
-$string['pluginname'] = 'Free images';
-$string['free_images:view'] = 'View free_images repository';
+defined('MOODLE_INTERNAL') || die();
+
 $string['configplugin'] = 'Free images repository type configuration';
-$string['maxwidth'] = 'Max image width (px)';
+$string['free_images:view'] = 'View free_images repository';
+$string['keyword'] = 'Search for';
 $string['maxheight'] = 'Max image height (px)';
+$string['maxwidth'] = 'Max image width (px)';
+$string['pluginname'] = 'Free images';
 $string['privacy:metadata:repository_free_images'] = 'The Free images repository plugin does store user preferences, and transmits user data from Moodle to the remote system.';
-$string['privacy:metadata:repository_free_images:search_text'] = 'The Free images repository user search text query.';
-$string['privacy:metadata:repository_free_images:preference:maxwidth'] = 'The user preference max width configured for the Free images repository';
 $string['privacy:metadata:repository_free_images:preference:maxheight'] = 'The user preference Max Height configured for the Free images repository.';
+$string['privacy:metadata:repository_free_images:preference:maxwidth'] = 'The user preference max width configured for the Free images repository';
+$string['privacy:metadata:repository_free_images:search_text'] = 'The Free images repository user search text query.';

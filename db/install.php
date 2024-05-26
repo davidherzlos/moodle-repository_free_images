@@ -31,7 +31,7 @@ function xmldb_repository_free_images_install() {
     global $CFG;
     $result = true;
     require_once($CFG->dirroot.'/repository/lib.php');
-    $freeimagesplugin = new repository_type('free_images', array(), true);
+    $freeimagesplugin = new repository_type('free_images', [], true);
     if(!$id = $freeimagesplugin->create(true)) {
         $result = false;
     }
