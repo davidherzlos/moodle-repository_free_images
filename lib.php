@@ -124,7 +124,8 @@ class repository_free_images extends repository {
     }
 
     /**
-     * To check whether the user is logged in.
+     * To check whether the user is logged in. This gets called when the filepicker needs to
+     * display the repository interface and process a search request.
      *
      * @return bool
      */
@@ -148,7 +149,7 @@ class repository_free_images extends repository {
     }
 
     /**
-     * Show the login screen, if required
+     * Show the login screen, if required. This get called when the search form is displayed.
      *
      * @return string
      */
@@ -526,5 +527,4 @@ EOD;
     public function sync_reference(stored_file $file) {
         return parent::sync_reference($file);
     }
-
 }
