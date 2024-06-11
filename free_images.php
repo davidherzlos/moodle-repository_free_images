@@ -15,21 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * free_images class
- * class for communication with Free images Commons API
+ * free_images class for communication with Free images Commons API
  *
- * @author Dongsheng Cai <dongsheng@moodle.com>, Raul Kern <raunator@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU Public License
+ * @copyright  2024 David OC <davidherzlos@gmail.com>
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package repository_free_images
  */
 
-define('FREE_IMAGES_THUMBS_PER_PAGE', 24);
-define('FREE_IMAGES_FILE_NS', 6);
+define('FREE_IMAGES_THUMBS_PER_PAGE', 25);
 define('FREE_IMAGES_IMAGE_SIDE_LENGTH', 1024);
-define('FREE_IMAGES_THUMB_SIZE', 120);
+define('FREE_IMAGES_THUMB_SIZE', 135);
+
 
 class free_images {
+
+    const FREE_IMAGES_UNSPLASH_CLIENT_ID = 'znXXliTsULyM1kY-oiY37iKo4hdCKPzlYcoi-Lsq4oU';
+
     private $_conn  = null;
+    
     private $_param = [];
 
     /** @var string API URL. */
@@ -44,16 +47,19 @@ class free_images {
     /** @var string token key. */
     protected $token;
 
+    /**
+     * TODO: Add or automate docblocks.
+     */
     public function __construct($url = '') {
         if (empty($url)) {
-            $this->api = 'https://commons.wikimedia.org/w/api.php';
+            $this->api = 'https://api.unsplash.com/search/photos';
         } else {
             $this->api = $url;
         }
-        $this->_param['format'] = 'php';
-        $this->_param['redirects'] = true;
+        $this->_param['redirects'] = true; // NOTE: this seems to be not used.
         $this->_conn = new curl(['cache' => true, 'debug' => false]);
     }
+
     public function login($user, $pass) {
         $this->_param['action']   = 'login';
         $this->_param['lgname']   = $user;
@@ -69,11 +75,13 @@ class free_images {
             return false;
         }
     }
+
     public function logout() {
         $this->_param['action']   = 'logout';
         $this->_conn->post($this->api, $this->_param);
         return;
     }
+
     public function get_image_url($titles) {
         $imageurls = [];
         $this->_param['action'] = 'query';
@@ -95,6 +103,7 @@ class free_images {
         }
         return $imageurls;
     }
+
     public function get_images_by_page($title) {
         $imageurls = [];
         $this->_param['action'] = 'query';
@@ -111,46 +120,13 @@ class free_images {
         }
         return $imageurls;
     }
-    /**
-     * Generate thumbnail URL from image URL.
-     *
-     * @param string $image_url
-     * @param int $orig_width
-     * @param int $orig_height
-     * @param int $thumb_width
-     * @param bool $force When true, forces the generation of a thumb URL.
-     * @return string
-     */
-    public function get_thumb_url($imageurl, $origwidth, $origheight, $thumbwidth = 75, $force = false) {
-        global $OUTPUT;
 
-        if (!$force && $origwidth <= $thumbwidth && $origheight <= $thumbwidth) {
-            return $imageurl;
-        } else {
-            $thumburl = '';
-            $commonsmaindir = 'https://upload.wikimedia.org/wikipedia/commons/';
-            if ($imageurl) {
-                $shortpath = str_replace($commonsmaindir, '', $imageurl);
-                $extension = strtolower(pathinfo($shortpath, PATHINFO_EXTENSION));
-                if (strcmp($extension, 'gif') == 0) {  // No thumb for gifs.
-                    return $OUTPUT->image_url(file_extension_icon('.gif'))->out(false);
-                }
-                $dirparts = explode('/', $shortpath);
-                $filename = end($dirparts);
-                if ($origheight > $origwidth) {
-                    $thumbwidth = round($thumbwidth * $origwidth / $origheight);
-                }
-                $thumburl = $commonsmaindir . 'thumb/' . implode('/', $dirparts) . '/'. $thumbwidth .'px-' . $filename;
-                if (strcmp($extension, 'svg') == 0) {  // Png thumb for svg-s.
-                    $thumburl .= '.png';
-                }
-            }
-            return $thumburl;
-        }
-    }
 
     /**
      * Search for images and return photos array.
+     *
+     * NOTE: The user should be able to choose an orientation.
+     * Also the licence for the image is wrong.
      *
      * @param string $keyword
      * @param int $page
@@ -159,98 +135,51 @@ class free_images {
      */
     public function search_images($keyword, $page = 0, $params = []) {
         global $OUTPUT;
-        $filesarray = [];
-        $this->_param['action'] = 'query';
-        $this->_param['generator'] = 'search';
-        $this->_param['gsrsearch'] = $keyword;
-        $this->_param['gsrnamespace'] = FREE_IMAGES_FILE_NS;
-        $this->_param['gsrlimit'] = FREE_IMAGES_THUMBS_PER_PAGE;
-        $this->_param['gsroffset'] = $page * FREE_IMAGES_THUMBS_PER_PAGE;
-        $this->_param['prop']   = 'imageinfo';
-        $this->_param['iiprop'] = 'url|dimensions|mime|timestamp|size|user';
+
+        $images = [];
+
+        $this->_param['query'] = $keyword;
+        $this->_param['page'] = $page;
+        $this->_param['perpage'] = FREE_IMAGES_THUMBS_PER_PAGE;
+        $this->_param['client_id'] = self::FREE_IMAGES_UNSPLASH_CLIENT_ID;
         $this->_param += $params;
-        $this->_param += ['iiurlwidth' => FREE_IMAGES_IMAGE_SIDE_LENGTH,
-            'iiurlheight' => FREE_IMAGES_IMAGE_SIDE_LENGTH];
-        // Didn't work with POST.
-        $content = $this->_conn->get($this->api, $this->_param);
-        $result = unserialize($content);
-        if (!empty($result['query']['pages'])) {
-            foreach ($result['query']['pages'] as $page) {
-                $title = $page['title'];
-                $filetype = $page['imageinfo'][0]['mime'];
-                $imagetypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml'];
-                if (in_array($filetype, $imagetypes)) {  // Is image.
-                    $extension = pathinfo($title, PATHINFO_EXTENSION);
-                    $issvg = strcmp($extension, 'svg') == 0;
 
-                    // Get PNG equivalent to SVG files.
-                    if ($issvg) {
-                        $title .= '.png';
-                    }
+        $response = $this->_conn->get($this->api, $this->_param);
+        $json = json_decode($response);
 
-                    // The thumbnail (max size requested) is smaller than the original size, we will use the thumbnail.
-                    if ($page['imageinfo'][0]['thumbwidth'] < $page['imageinfo'][0]['width']) {
-                        $attrs = [
-                            // Upload scaled down image.
-                            'source' => $page['imageinfo'][0]['thumburl'],
-                            'image_width' => $page['imageinfo'][0]['thumbwidth'],
-                            'image_height' => $page['imageinfo'][0]['thumbheight'],
-                        ];
-                        if ($attrs['image_width'] <= FREE_IMAGES_THUMB_SIZE && $attrs['image_height'] <= FREE_IMAGES_THUMB_SIZE) {
-                            $attrs['realthumbnail'] = $attrs['source'];
-                        }
-                        if ($attrs['image_width'] <= 24 && $attrs['image_height'] <= 24) {
-                            $attrs['realicon'] = $attrs['source'];
-                        }
-
-                        // We use the original file.
-                    } else {
-                        $attrs = [
-                            // Upload full size image.
-                            'image_width' => $page['imageinfo'][0]['width'],
-                            'image_height' => $page['imageinfo'][0]['height'],
-                            'size' => $page['imageinfo'][0]['size'],
-                        ];
-
-                        // We cannot use the source when the file is SVG.
-                        if ($issvg) {
-                            // So we generate a PNG thumbnail of the file at its original size.
-                            $attrs['source'] = $this->get_thumb_url($page['imageinfo'][0]['url'], $page['imageinfo'][0]['width'],
-                                $page['imageinfo'][0]['height'], $page['imageinfo'][0]['width'], true);
-                        } else {
-                            $attrs['source'] = $page['imageinfo'][0]['url'];
-                        }
-                    }
-                    $attrs += [
-                        'realthumbnail' => $this->get_thumb_url(
-                            $page['imageinfo'][0]['url'],
-                            $page['imageinfo'][0]['width'],
-                            $page['imageinfo'][0]['height'],
-                            FREE_IMAGES_THUMB_SIZE
-                        ),
-                        'realicon' => $this->get_thumb_url(
-                            $page['imageinfo'][0]['url'],
-                            $page['imageinfo'][0]['width'],
-                            $page['imageinfo'][0]['height'], 24
-                        ),
-                        'author' => $page['imageinfo'][0]['user'],
-                        'datemodified' => strtotime($page['imageinfo'][0]['timestamp']),
-                        ];
-                } else {  // Other file types.
-                    $attrs = ['source' => $page['imageinfo'][0]['url']];
-                }
-                $filesarray[] = [
-                    'title' => substr($title, 5),         // Chop off 'File:'.
-                    'thumbnail' => $OUTPUT->image_url(file_extension_icon(substr($title, 5)))->out(false),
-                    'thumbnail_width' => FREE_IMAGES_THUMB_SIZE,
-                    'thumbnail_height' => FREE_IMAGES_THUMB_SIZE,
-                    'license' => 'cc-sa',
-                    // The accessible url of the file.
-                    'url' => $page['imageinfo'][0]['descriptionurl'],
-                ] + $attrs;
-            }
+        if (empty($json->results)) {
+            return $images;
         }
-        return $filesarray;
+
+        foreach ($json->results as $record) {
+            $attrs = $this->extract_image_attrs($record);
+            $images[] = [
+                'thumbnail' => $OUTPUT->image_url(file_extension_icon($record->slug))->out(false),
+                'thumbnail_width' => FREE_IMAGES_THUMB_SIZE,
+                'thumbnail_height' => FREE_IMAGES_THUMB_SIZE,
+                'license' => 'cc-sa',
+            ] + $attrs;
+        }
+
+        return $images;
     }
 
+    /**
+     * NOTE: There some required stuff to be ensured in this function.
+     * Needs to have realistic widths and heights for icons.
+     * Also the slug property can be localized by used lang code.
+     */
+    public function extract_image_attrs($record): array {
+        return [
+            'title' => $record->slug,
+            'author' => $record->user->name,
+            'source' => $record->urls->small,
+            'url' => $record->urls->full,
+            'image_width' => FREE_IMAGES_THUMB_SIZE,
+            'image_height' => FREE_IMAGES_THUMB_SIZE,
+            'realthumbnail' => $record->urls->thumb,
+            'realicon' => $record->urls->thumb,
+            'datemodified' => strtotime($record->updated_at),
+        ];
+    }
 }
