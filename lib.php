@@ -375,7 +375,7 @@ EOD;
      * {@link repository::copy_to_area()} is used instead.
      *
      * This function can be overridden by subclass if the files.reference field contains
-     * not just URL or if request should be done differently.
+     * not just URL or if request should be dose differently.
      *
      * @see curl
      * @throws file_exception when error occured
@@ -399,7 +399,7 @@ EOD;
      *               return mimetypes of files, it can be an array
      */
     public function supported_filetypes() {
-        return parent::supported_filetypes();
+        return ['image/gif', 'image/jpe', 'image/jpeg', 'image/jpg', 'image/png', 'image/svg'];
     }
 
     /**
@@ -524,7 +524,9 @@ EOD;
      * @param stored_file $file
      * @return bool false when file does not need synchronisation, true if it was synchronised
      */
-    public function sync_reference(stored_file $file) {
+    public function sync_reference(stored_file  $file ) {
+
         return parent::sync_reference($file);
+
     }
 }

@@ -1,5 +1,4 @@
 <?php
-
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -30,7 +29,7 @@ $string['free_images:view'] = 'View free_images repository';
 $string['keyword'] = 'Search for';
 $string['maxheight'] = 'Max image height (px)';
 $string['maxwidth'] = 'Max image width (px)';
-$string['pluginname'] = 'Free images';
+$string['pluginname'] = 'Image Hub';
 $string['privacy:metadata:repository_free_images'] = 'The Free images repository plugin does store user preferences, and transmits user data from Moodle to the remote system.';
 $string['privacy:metadata:repository_free_images:preference:maxheight'] = 'The user preference Max Height configured for the Free images repository.';
 $string['privacy:metadata:repository_free_images:preference:maxwidth'] = 'The user preference max width configured for the Free images repository';

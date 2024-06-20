@@ -32,7 +32,7 @@ class free_images {
     const FREE_IMAGES_UNSPLASH_CLIENT_ID = 'znXXliTsULyM1kY-oiY37iKo4hdCKPzlYcoi-Lsq4oU';
 
     private $_conn  = null;
-    
+
     private $_param = [];
 
     /** @var string API URL. */
@@ -51,12 +51,7 @@ class free_images {
      * TODO: Add or automate docblocks.
      */
     public function __construct($url = '') {
-        if (empty($url)) {
-            $this->api = 'https://api.unsplash.com/search/photos';
-        } else {
-            $this->api = $url;
-        }
-        $this->_param['redirects'] = true; // NOTE: this seems to be not used.
+        $this->api = empty($url) ? 'https://api.unsplash.com/search/photos' : $url;
         $this->_conn = new curl(['cache' => true, 'debug' => false]);
     }
 
@@ -134,8 +129,6 @@ class free_images {
      * @return array
      */
     public function search_images($keyword, $page = 0, $params = []) {
-        global $OUTPUT;
-
         $images = [];
 
         $this->_param['query'] = $keyword;
@@ -152,34 +145,55 @@ class free_images {
         }
 
         foreach ($json->results as $record) {
-            $attrs = $this->extract_image_attrs($record);
-            $images[] = [
-                'thumbnail' => $OUTPUT->image_url(file_extension_icon($record->slug))->out(false),
-                'thumbnail_width' => FREE_IMAGES_THUMB_SIZE,
-                'thumbnail_height' => FREE_IMAGES_THUMB_SIZE,
-                'license' => 'cc-sa',
-            ] + $attrs;
+            $images[] = $this->extract_image_attrs($record);
         }
 
         return $images;
     }
 
     /**
-     * NOTE: There some required stuff to be ensured in this function.
+     * FIXME:
      * Needs to have realistic widths and heights for icons.
-     * Also the slug property can be localized by used lang code.
+     * Also the slug property should be localized by the user lang.
+     * Need to review how the url and source properties are used.
+     * Thumbnail property is wrong.
      */
     public function extract_image_attrs($record): array {
+        global $OUTPUT;
+
+        $format = $this->get_file_format_from_url($record->urls->full);
+        $thumbnail = $OUTPUT->image_url(file_extension_icon($record->slug))->out(false);
+
         return [
-            'title' => $record->slug,
+            'title' => "{$record->slug}.{$format}",
             'author' => $record->user->name,
-            'source' => $record->urls->small,
+            'source' => $record->urls->raw,
             'url' => $record->urls->full,
             'image_width' => FREE_IMAGES_THUMB_SIZE,
             'image_height' => FREE_IMAGES_THUMB_SIZE,
+            'thumbnail' => $thumbnail,
+            'thumbnail_width' => FREE_IMAGES_THUMB_SIZE,
+            'thumbnail_height' => FREE_IMAGES_THUMB_SIZE,
+            'license' => 'cc-sa',
             'realthumbnail' => $record->urls->thumb,
             'realicon' => $record->urls->thumb,
             'datemodified' => strtotime($record->updated_at),
         ];
     }
+
+    /**
+     * Given a string in an url it returns the file format parameter value.
+     */
+    private function get_file_format_from_url(string $url = ''): string {
+        if (empty($url)) {
+            return new \moodle_exception('invalidurl');
+        }
+        $moodleurl = new \moodle_url($url);
+        if (empty($moodleurl) || empty($moodleurl->get_param('fm'))) {
+            return new moodle_exception('invalidfiletype');
+        }
+        return $moodleurl->get_param('fm');
+    }
+
 }
+
