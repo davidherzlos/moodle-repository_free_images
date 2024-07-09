@@ -38,8 +38,23 @@ require_once(__DIR__ . '/free_images.php');
  */
 class repository_free_images extends repository {
 
+    /** @var free_images The API client for the repository. */
+    public $client;
+
     /** @var string keyword search. */
-    protected $keyword;
+    public $keyword;
+
+    /**
+     * Constructor for this repository class.
+     *
+     * @package    repository_free_images
+     * @copyright  2024 David OC <davidherzlos@gmail.com>
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    public function __construct($repositoryid, $context = SYSCONTEXTID, $options = [], $readonly = 0) {
+        parent::__construct($repositoryid, $context, $options, $readonly);
+        $this->client = new free_images();
+    }
 
     /**
      * Returns maximum width for images
@@ -101,13 +116,12 @@ class repository_free_images extends repository {
      *           path, current path and parent path
      */
     public function get_listing($path = '', $page = ''): array {
-        $client = new free_images;
         $list = [];
         $list['page'] = (int)$page;
         if ($list['page'] < 1) {
             $list['page'] = 1;
         }
-        $list['list'] = $client->search_images($this->keyword, $list['page'] - 1,
+        $list['list'] = $this->client->search_images($this->keyword, $list['page'] - 1,
                 ['iiurlwidth' => $this->get_maxwidth(),
                     'iiurlheight' => $this->get_maxheight()]);
         $list['nologin'] = true;
@@ -124,72 +138,27 @@ class repository_free_images extends repository {
     }
 
     /**
-     * To check whether the user is logged in. This gets called when the filepicker needs to
-     * display the repository interface and process a search request.
+     * To check whether the user is logged in.
+     *
+     * This gets called when the filepicker needs to display the repository
+     * interface and process a search request.
      *
      * @return bool
      */
     public function check_login(): bool {
-        global $SESSION;
-        $this->keyword = optional_param('free_images_keyword', '', PARAM_RAW);
-        if (empty($this->keyword)) {
-            $this->keyword = optional_param('s', '', PARAM_RAW);
-        }
-        $sesskeyword = 'free_images_'.$this->id.'_keyword';
-        if (empty($this->keyword) && optional_param('page', '', PARAM_RAW)) {
-            // This is the request of another page for the last search, retrieve the cached keyword.
-            if (isset($SESSION->{$sesskeyword})) {
-                $this->keyword = $SESSION->{$sesskeyword};
-            }
-        } else if (!empty($this->keyword)) {
-            // Save the search keyword in the session so we can retrieve it later.
-            $SESSION->{$sesskeyword} = $this->keyword;
-        }
-        return !empty($this->keyword);
+        return $this->client->is_logged_in($this);
     }
 
     /**
-     * Show the login screen, if required. This get called when the search form is displayed.
+     * Show the login screen, if required.
      *
      * @return string
      */
-    public function print_login(): mixed {
-        $keyword = new stdClass();
-        $keyword->label = get_string('keyword', 'repository_free_images').': ';
-        $keyword->id    = 'input_text_keyword';
-        $keyword->type  = 'text';
-        $keyword->name  = 'free_images_keyword';
-        $keyword->value = '';
-        $maxwidth = [
-            'label' => get_string('maxwidth', 'repository_free_images').': ',
-            'type' => 'text',
-            'name' => 'free_images_maxwidth',
-            'value' => get_user_preferences('repository_free_images_maxwidth', FREE_IMAGES_IMAGE_SIDE_LENGTH),
-        ];
-        $maxheight = [
-            'label' => get_string('maxheight', 'repository_free_images').': ',
-            'type' => 'text',
-            'name' => 'free_images_maxheight',
-            'value' => get_user_preferences('repository_free_images_maxheight', FREE_IMAGES_IMAGE_SIDE_LENGTH),
-        ];
+    public function print_login() {
         if ($this->options['ajax']) {
-            $form = [];
-            $form['login'] = [$keyword, (object)$maxwidth, (object)$maxheight];
-            $form['nologin'] = true;
-            $form['norefresh'] = true;
-            $form['nosearch'] = true;
-            $form['allowcaching'] = false; // Indicates that login form can NOT.
-            // Be cached in filepicker.js (maxwidth and maxheight are dynamic).
-            return $form;
+            return $this->client->get_custom_form();
         } else {
-            echo <<<EOD
-<table>
-<tr>
-<td>{$keyword->label}</td><td><input name="{$keyword->name}" type="text" /></td>
-</tr>
-</table>
-<input type="submit" />
-EOD;
+            echo $this->client->get_custom_nonajax_form();
         }
     }
 
@@ -213,9 +182,8 @@ EOD;
      * @return mixed see {@link repository::get_listing()}
      */
     public function search($searchtext, $page = 0): mixed {
-        $client = new free_images;
         $searchresult = [];
-        $searchresult['list'] = $client->search_images($searchtext);
+        $searchresult['list'] = $this->client->search_images($searchtext);
         return $searchresult;
     }
 

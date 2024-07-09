@@ -195,5 +195,119 @@ class free_images {
         return $moodleurl->get_param('fm');
     }
 
+    /**
+     * Checks if the user is loggedin on the external service.
+     *
+     * Unsplash doesn't require authentication for
+     * searching and fetching. So we can always
+     * return true.
+     *
+     * NOTE: Not very sure if the implementation taken from
+     * Wikimedia can fit for unsplash API. Need to check this.
+     *
+     * @package    repository_free_images
+     * @copyright  2024 David OC <davidherzlos@gmail.com>
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    public function is_logged_in($repo) {
+        global $SESSION;
+
+        $repo->keyword = optional_param('free_images_keyword', '', PARAM_RAW);
+        if (empty($repo->keyword)) {
+            $repo->keyword = optional_param('s', '', PARAM_RAW);
+        }
+        $sesskeyword = 'free_images_'.$repo->id.'_keyword';
+        if (empty($repo->keyword) && optional_param('page', '', PARAM_RAW)) {
+            // This is the request of another page for the last search, retrieve the cached keyword.
+            if (isset($SESSION->{$sesskeyword})) {
+                $repo->keyword = $SESSION->{$sesskeyword};
+            }
+        } else if (!empty($repo->keyword)) {
+            // Save the search keyword in the session so we can retrieve it later.
+            $SESSION->{$sesskeyword} = $repo->keyword;
+        }
+        return !empty($repo->keyword);
+    }
+
+    /**
+     * This get called in order to display the service login form.
+     *
+     * However this service doesn't require authtentication,
+     * so we can return a search form instead.
+     *
+     * @package    repository_free_images
+     * @copyright  2024 David OC <davidherzlos@gmail.com>
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    public function get_custom_form(): mixed {
+        $form = [];
+        $form['login'] = $this->get_form_definition();
+        $form['nologin'] = true;
+        $form['norefresh'] = true;
+        $form['nosearch'] = true;
+        // NOTE: login form CANNOT Be cached in filepicker.js
+        // because (maxwidth and maxheight) are dynamic.
+        $form['allowcaching'] = false;
+
+        return $form;
+    }
+
+    /**
+     * Returns the form defintion for the service custom form.
+     *
+     * Notice the form is not defined in terms of the form API.
+     * They are just plain arrays.
+     *
+     * @package    repository_free_images
+     * @copyright  2024 David OC <davidherzlos@gmail.com>
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    protected function get_form_definition() {
+        // The search keyword to fetch images.
+        $keyword = [
+            'id' => 'input_text_keyword',
+            'label' => get_string('keyword', 'repository_free_images').': ',
+            'type' => 'text',
+            'name' => 'free_images_keyword',
+            'value' => '',
+        ];
+
+        // Max image width in pixels.
+        $maxwidth = [
+            'label' => get_string('maxwidth', 'repository_free_images').': ',
+            'type' => 'text',
+            'name' => 'free_images_maxwidth',
+            'value' => get_user_preferences('repository_free_images_maxwidth', FREE_IMAGES_IMAGE_SIDE_LENGTH),
+        ];
+
+        // Max image height in pixels.
+        $maxheight = [
+            'label' => get_string('maxheight', 'repository_free_images').': ',
+            'type' => 'text',
+            'name' => 'free_images_maxheight',
+            'value' => get_user_preferences('repository_free_images_maxheight', FREE_IMAGES_IMAGE_SIDE_LENGTH),
+        ];
+
+        return [$keyword, $maxwidth, $maxheight];
+    }
+
+    /**
+     * Returns the non ajax version of the service custom form.
+     *
+     * @package    repository_free_images
+     * @copyright  2024 David OC <davidherzlos@gmail.com>
+     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     */
+    public function get_custom_nonajax_form() {
+        global $OUTPUT;
+
+        return $OUTPUT->render_from_template(
+            'repository_free_images/unsplash_nonajax_form', [
+                'keyword_label' => get_string('keyword', 'repository_free_images').': ',
+                'keyword_name' => 'free_images_keyword',
+            ]
+        );
+    }
+
 }
 
