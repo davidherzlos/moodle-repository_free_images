@@ -15,24 +15,49 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * free_images class for communication with Free images Commons API
+ * Base class responsible to communicate with image services. Each service is encapculated
+ * on derived classes.
  *
+ * @package repository_free_images
  * @copyright  2024 David OC <davidherzlos@gmail.com>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package repository_free_images
+ *
  */
 
-define('FREE_IMAGES_THUMBS_PER_PAGE', 25);
-define('FREE_IMAGES_IMAGE_SIDE_LENGTH', 1024);
-define('FREE_IMAGES_THUMB_SIZE', 135);
+namespace repository_free_images\local;
 
+defined('MOODLE_INTERNAL') || die();
 
-class free_images {
+global $CFG;
+require_once($CFG->dirroot . '/repository/free_images/lib.php');
 
-    const FREE_IMAGES_UNSPLASH_CLIENT_ID = 'znXXliTsULyM1kY-oiY37iKo4hdCKPzlYcoi-Lsq4oU';
+use repository_free_images;
 
+/**
+ * Repository class to interact with external image services.
+ *
+ * @package    repository_free_images
+ * @copyright  2024 David OC <davidherzlos@gmail.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class client {
+
+    /** @var int Number of thumbs to show per page. */
+    const THUMBS_PER_PAGE = 25;
+
+    /** @var int Image side lenght. */
+    const IMAGE_SIDE_LENGTH = 1024;
+
+    /** @var int Image thumb size. */
+    const THUMB_SIZE = 135;
+
+    /** @var string client ID. */
+    const CLIENT_ID = 'znXXliTsULyM1kY-oiY37iKo4hdCKPzlYcoi-Lsq4oU';
+
+    /** @var object Curl connection object. */
     private $_conn  = null;
 
+    /** @var mixed[] Params to configure the connection. */
     private $_param = [];
 
     /** @var string API URL. */
@@ -48,94 +73,34 @@ class free_images {
     protected $token;
 
     /**
-     * TODO: Add or automate docblocks.
+     * Class constructor.
+     *
+     * @param string $url API endpoint URL.
      */
     public function __construct($url = '') {
         $this->api = empty($url) ? 'https://api.unsplash.com/search/photos' : $url;
-        $this->_conn = new curl(['cache' => true, 'debug' => false]);
+        $this->_conn = new \curl(['cache' => true, 'debug' => false]);
     }
-
-    public function login($user, $pass) {
-        $this->_param['action']   = 'login';
-        $this->_param['lgname']   = $user;
-        $this->_param['lgpassword'] = $pass;
-        $content = $this->_conn->post($this->api, $this->_param);
-        $result = unserialize($content);
-        if (!empty($result['result']['sessionid'])) {
-            $this->userid = $result['result']['lguserid'];
-            $this->username = $result['result']['lgusername'];
-            $this->token = $result['result']['lgtoken'];
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public function logout() {
-        $this->_param['action']   = 'logout';
-        $this->_conn->post($this->api, $this->_param);
-        return;
-    }
-
-    public function get_image_url($titles) {
-        $imageurls = [];
-        $this->_param['action'] = 'query';
-        if (is_array($titles)) {
-            foreach ($titles as $title) {
-                $this->_param['titles'] .= ('|'.urldecode($title));
-            }
-        } else {
-            $this->_param['titles'] = urldecode($titles);
-        }
-        $this->_param['prop']   = 'imageinfo';
-        $this->_param['iiprop'] = 'url';
-        $content = $this->_conn->post($this->api, $this->_param);
-        $result = unserialize($content);
-        foreach ($result['query']['pages'] as $page) {
-            if (!empty($page['imageinfo'][0]['url'])) {
-                $imageurls[] = $page['imageinfo'][0]['url'];
-            }
-        }
-        return $imageurls;
-    }
-
-    public function get_images_by_page($title) {
-        $imageurls = [];
-        $this->_param['action'] = 'query';
-        $this->_param['generator'] = 'images';
-        $this->_param['titles'] = urldecode($title);
-        $this->_param['prop']   = 'images|info|imageinfo';
-        $this->_param['iiprop'] = 'url';
-        $content = $this->_conn->post($this->api, $this->_param);
-        $result = unserialize($content);
-        if (!empty($result['query']['pages'])) {
-            foreach ($result['query']['pages'] as $page) {
-                $imageurls[$page['title']] = $page['imageinfo'][0]['url'];
-            }
-        }
-        return $imageurls;
-    }
-
 
     /**
-     * Search for images and return photos array.
+     * Returns a list of image results from the service API given a search keyword,
+     * the current page of results and an associative array of params.
+     * on the passed keyword.
      *
      * NOTE: The user should be able to choose an orientation.
      * Also the licence for the image is wrong.
      *
-     * @param string $keyword
-     * @param int $page
-     * @param array $params additional query params
-     * @return array
+     * @param string $keyword The keyword to search.
+     * @param int $page The current page of results to fetch.
+     * @param mixed[] $params The params to make the request.
+     * @return mixed[] Results.
      */
     public function search_images($keyword, $page = 0, $params = []) {
         $images = [];
 
         $this->_param['query'] = $keyword;
         $this->_param['page'] = $page;
-        $this->_param['perpage'] = FREE_IMAGES_THUMBS_PER_PAGE;
-        $this->_param['client_id'] = self::FREE_IMAGES_UNSPLASH_CLIENT_ID;
-        $this->_param += $params;
+        $this->_param['perpage'] = self::THUMBS_PER_PAGE; $this->_param['client_id'] = self::CLIENT_ID; $this->_param += $params;
 
         $response = $this->_conn->get($this->api, $this->_param);
         $json = json_decode($response);
@@ -152,28 +117,32 @@ class free_images {
     }
 
     /**
-     * FIXME:
+     * Extracts relevant image information and returns it as a record.i
+     *
      * Needs to have realistic widths and heights for icons.
      * Also the slug property should be localized by the user lang.
-     * Need to review how the url and source properties are used.
-     * Thumbnail property is wrong.
+     *
+     * @param object $record The record containig the image data,
+     * @return mixed[] Array of requested image properties.
+     *
      */
-    public function extract_image_attrs($record): array {
+    public function extract_image_attrs(object $record) {
         global $OUTPUT;
 
-        $format = $this->get_file_format_from_url($record->urls->full);
+        $format = $this->get_file_format_from_url($record->urls->regular);
+        // FIXME: This property returns nothing.
         $thumbnail = $OUTPUT->image_url(file_extension_icon($record->slug))->out(false);
 
         return [
             'title' => "{$record->slug}.{$format}",
             'author' => $record->user->name,
-            'source' => $record->urls->raw,
-            'url' => $record->urls->full,
-            'image_width' => FREE_IMAGES_THUMB_SIZE,
-            'image_height' => FREE_IMAGES_THUMB_SIZE,
+            'source' => $record->urls->regular, // NOTE: We could use raw for download.
+            'url' => $record->urls->regular,
+            'image_width' => self::THUMB_SIZE,
+            'image_height' => self::THUMB_SIZE,
             'thumbnail' => $thumbnail,
-            'thumbnail_width' => FREE_IMAGES_THUMB_SIZE,
-            'thumbnail_height' => FREE_IMAGES_THUMB_SIZE,
+            'thumbnail_width' => self::THUMB_SIZE,
+            'thumbnail_height' => self::THUMB_SIZE,
             'license' => 'cc-sa',
             'realthumbnail' => $record->urls->thumb,
             'realicon' => $record->urls->thumb,
@@ -182,15 +151,18 @@ class free_images {
     }
 
     /**
-     * Given a string in an url it returns the file format parameter value.
+     * It determines the file extension from a given string with an url
+     *
+     * @param string $url The url to use for searching.
+     * @return string File extension.
      */
     private function get_file_format_from_url(string $url = ''): string {
         if (empty($url)) {
             return new \moodle_exception('invalidurl');
         }
         $moodleurl = new \moodle_url($url);
-        if (empty($moodleurl) || empty($moodleurl->get_param('fm'))) {
-            return new moodle_exception('invalidfiletype');
+        if (empty($moodleurl->out()) || empty($moodleurl->get_param('fm'))) {
+            return new \moodle_exception('invalidfiletype');
         }
         return $moodleurl->get_param('fm');
     }
@@ -202,30 +174,30 @@ class free_images {
      * searching and fetching. So we can always
      * return true.
      *
-     * NOTE: Not very sure if the implementation taken from
-     * Wikimedia can fit for unsplash API. Need to check this.
+     * @param repository_free_images $repo object.
+     * @return bool
      *
-     * @package    repository_free_images
-     * @copyright  2024 David OC <davidherzlos@gmail.com>
-     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
      */
-    public function is_logged_in($repo) {
+    public function is_logged_in(repository_free_images $repo) {
         global $SESSION;
 
-        $repo->keyword = optional_param('free_images_keyword', '', PARAM_RAW);
-        if (empty($repo->keyword)) {
-            $repo->keyword = optional_param('s', '', PARAM_RAW);
-        }
+        $kparam = optional_param('free_images_keyword', '', PARAM_RAW);
+        $sparam = optional_param('s', '', PARAM_RAW);
+        $pparam = optional_param('page', '', PARAM_RAW);
+
+        $repo->keyword = !empty($kparam) ? $kparam : $sparam;
         $sesskeyword = 'free_images_'.$repo->id.'_keyword';
-        if (empty($repo->keyword) && optional_param('page', '', PARAM_RAW)) {
-            // This is the request of another page for the last search, retrieve the cached keyword.
-            if (isset($SESSION->{$sesskeyword})) {
-                $repo->keyword = $SESSION->{$sesskeyword};
-            }
-        } else if (!empty($repo->keyword)) {
-            // Save the search keyword in the session so we can retrieve it later.
+
+        // This is the request of another page for the last search, retrieve the cached keyword.
+        if (empty($repo->keyword) && !empty($pparam) && isset($SESSION->{$sesskeyword})) {
+            $repo->keyword = $SESSION->{$sesskeyword};
+        }
+
+        // Save the search keyword in the session so we can retrieve it later.
+        if (!empty($repo->keyword)) {
             $SESSION->{$sesskeyword} = $repo->keyword;
         }
+
         return !empty($repo->keyword);
     }
 
@@ -254,13 +226,10 @@ class free_images {
 
     /**
      * Returns the form defintion for the service custom form.
-     *
      * Notice the form is not defined in terms of the form API.
-     * They are just plain arrays.
      *
-     * @package    repository_free_images
-     * @copyright  2024 David OC <davidherzlos@gmail.com>
-     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     * @return mixed[] The form definition.
+     *
      */
     protected function get_form_definition() {
         // The search keyword to fetch images.
@@ -277,7 +246,7 @@ class free_images {
             'label' => get_string('maxwidth', 'repository_free_images').': ',
             'type' => 'text',
             'name' => 'free_images_maxwidth',
-            'value' => get_user_preferences('repository_free_images_maxwidth', FREE_IMAGES_IMAGE_SIDE_LENGTH),
+            'value' => get_user_preferences('repository_free_images_maxwidth', self::IMAGE_SIDE_LENGTH),
         ];
 
         // Max image height in pixels.
@@ -285,7 +254,7 @@ class free_images {
             'label' => get_string('maxheight', 'repository_free_images').': ',
             'type' => 'text',
             'name' => 'free_images_maxheight',
-            'value' => get_user_preferences('repository_free_images_maxheight', FREE_IMAGES_IMAGE_SIDE_LENGTH),
+            'value' => get_user_preferences('repository_free_images_maxheight', self::IMAGE_SIDE_LENGTH),
         ];
 
         return [$keyword, $maxwidth, $maxheight];
@@ -294,9 +263,7 @@ class free_images {
     /**
      * Returns the non ajax version of the service custom form.
      *
-     * @package    repository_free_images
-     * @copyright  2024 David OC <davidherzlos@gmail.com>
-     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     * @return string template for custom non ajax form.
      */
     public function get_custom_nonajax_form() {
         global $OUTPUT;
@@ -309,5 +276,22 @@ class free_images {
         );
     }
 
+    /**
+     * Returns true if the image client supports global search.
+     *
+     * @return bool
+     */
+    public function supports_global_search() {
+        return false;
+    }
+
+    /**
+     * Returns the filetypes supported by this image client.
+     *
+     * @return int
+     */
+    public function get_file_types() {
+        return (FILE_EXTERNAL);
+    }
 }
 
