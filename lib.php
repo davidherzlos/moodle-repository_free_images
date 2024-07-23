@@ -24,6 +24,8 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+global $CFG;
+
 require_once($CFG->dirroot . '/repository/lib.php');
 require_once(__DIR__ . '/free_images.php');
 
@@ -45,15 +47,16 @@ class repository_free_images extends repository {
     public $keyword;
 
     /**
-     * Constructor for this repository class.
+     * Constructor for this repository type.
      *
-     * @package    repository_free_images
-     * @copyright  2024 David OC <davidherzlos@gmail.com>
-     * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+     * @param int $repositoryid repository instance id.
+     * @param int|stdClass $context a context id or context object.
+     * @param mixed[] $options repository options.
+     * @param int $readonly indicate this repo is readonly or not.
      */
-    public function __construct($repositoryid, $context = SYSCONTEXTID, $options = [], $readonly = 0) {
+    public function __construct(int $repositoryid, $context = SYSCONTEXTID, array $options = [], int $readonly = 0) {
         parent::__construct($repositoryid, $context, $options, $readonly);
-        $this->client = new free_images();
+        $this->client == new free_images();
     }
 
     /**
@@ -64,7 +67,7 @@ class repository_free_images extends repository {
      *
      * @return int
      */
-    private function get_maxwidth(): mixed {
+    private function get_maxwidth() {
 
         $param = optional_param('free_images_maxwidth', 0, PARAM_INT);
         $pref = get_user_preferences('repository_free_images_maxwidth', FREE_IMAGES_IMAGE_SIDE_LENGTH);
@@ -83,7 +86,7 @@ class repository_free_images extends repository {
      *
      * @return int
      */
-    private function get_maxheight(): mixed {
+    private function get_maxheight() {
         $param = optional_param('free_images_maxheight', 0, PARAM_INT);
         $pref = get_user_preferences('repository_free_images_maxheight', FREE_IMAGES_IMAGE_SIDE_LENGTH);
         if ($param > 0 && $param != $pref) {
@@ -100,7 +103,7 @@ class repository_free_images extends repository {
      *
      * @param string $path this parameter can a folder name, or a identification of folder
      * @param string $page the page number of file list
-     * @return array the list of files, including meta infomation, containing the following keys
+     * @return mixed[] $result the list of files, including meta infomation, containing the following keys
      *           manage, url to manage url
      *           client_id
      *           login, login form
@@ -115,7 +118,7 @@ class repository_free_images extends repository {
      *           list, file list
      *           path, current path and parent path
      */
-    public function get_listing($path = '', $page = ''): array {
+    public function get_listing($path = '', $page = '') {
         $list = [];
         $list['page'] = (int)$page;
         if ($list['page'] < 1) {
@@ -145,7 +148,7 @@ class repository_free_images extends repository {
      *
      * @return bool
      */
-    public function check_login(): bool {
+    public function check_login() {
         return $this->client->is_logged_in($this);
     }
 
@@ -159,6 +162,7 @@ class repository_free_images extends repository {
             return $this->client->get_custom_form();
         } else {
             echo $this->client->get_custom_nonajax_form();
+            return "";
         }
     }
 
@@ -168,7 +172,7 @@ class repository_free_images extends repository {
      * if this plugin support global search, if this function return
      * true, search function will be called when global searching working
      */
-    public function global_search(): bool {
+    public function global_search() {
         return false;
     }
 
@@ -177,11 +181,11 @@ class repository_free_images extends repository {
      * When doing global search, $search_text will be used as
      * keyword.
      *
-     * @param string $search_text search key word
+     * @param string $searchtext search key word
      * @param int $page page
      * @return mixed see {@link repository::get_listing()}
      */
-    public function search($searchtext, $page = 0): mixed {
+    public function search($searchtext, $page = 0) {
         $searchresult = [];
         $searchresult['list'] = $this->client->search_images($searchtext);
         return $searchresult;
@@ -202,8 +206,8 @@ class repository_free_images extends repository {
      * @param string $source source of the file, returned by repository as 'source' and received back from user (not cleaned)
      * @return string|null
      */
-    public function get_file_source_info($url): mixed {
-        return $url;
+    public function get_file_source_info($source) {
+        return $source;
     }
 
     /**
@@ -225,7 +229,7 @@ class repository_free_images extends repository {
      * @return boolean True when the repository accesses private external data.
      * @since  Moodle 2.5
      */
-    public function contains_private_data(): bool {
+    public function contains_private_data() {
         return false;
     }
 
@@ -236,7 +240,6 @@ class repository_free_images extends repository {
      * potential parameter substitutions is request
      *
      * @param string $source source of the file, returned by repository as 'source' and received back from user (not cleaned)
-     * @return bool whether the file is accessible by current user
      */
     public function file_is_accessible($source) {
         return parent::file_is_accessible($source);
@@ -251,13 +254,13 @@ class repository_free_images extends repository {
      * {@link file_is_accessible} should be called for alias location before calling this function.
      *
      * @param string $source The metainfo of file, it is base64 encoded php serialized data
-     * @param stdClass|array $filerecord contains itemid, filepath, filename and optionally other
+     * @param stdClass|mixed[] $filerecord contains itemid, filepath, filename and optionally other
      *      attributes of the new file
      * @param int $maxbytes maximum allowed size of file, -1 if unlimited. If size of file exceeds
      *      the limit, the file_exception is thrown.
      * @param int $areamaxbytes the maximum size of the area. A file_exception is thrown if the
      *      new file will reach the limit.
-     * @return array The information about the created file
+     * @return mixed[] The information about the created file
      */
     public function copy_to_area($source, $filerecord, $maxbytes = -1, $areamaxbytes = FILE_AREA_MAX_BYTES_UNLIMITED) {
         return parent::copy_to_area($source, $filerecord, $maxbytes, $areamaxbytes);
@@ -272,10 +275,11 @@ class repository_free_images extends repository {
      * @param int $lifetime Number of seconds before the file should expire from caches (null means $CFG->filelifetime)
      * @param int $filter 0 (default)=no filtering, 1=all files, 2=html files only
      * @param bool $forcedownload If true (default false), forces download of file rather than view in browser/plugin
-     * @param array $options additional options affecting the file serving
+     * @param mixed[] $options additional options affecting the file serving
+     * @return void
      */
     public function send_file($storedfile, $lifetime=null , $filter=0, $forcedownload=false, $options = null) {
-        return parent::send_file($storedfile, $lifetime, $filter, $forcedownload, $options);
+        parent::send_file($storedfile, $lifetime, $filter, $forcedownload, $options);
     }
 
     /**
@@ -352,7 +356,7 @@ class repository_free_images extends repository {
      * it is asssumed that it contains the string with URL of the file
      * @param string $filename filename (without path) to save the downloaded file in the
      * temporary directory, if omitted or file already exists the new filename will be generated
-     * @return array with elements:
+     * @return mixed[] with elements:
      *   path: internal location of the file
      *   url: URL to the source (from parameters)
      */
@@ -363,7 +367,7 @@ class repository_free_images extends repository {
     /**
      * What kind of files will be in this repository?
      *
-     * @return array return '*' means this repository support any files, otherwise
+     * @return string[] return '*' means this repository support any files, otherwise
      *               return mimetypes of files, it can be an array
      */
     public function supported_filetypes() {
@@ -396,7 +400,7 @@ class repository_free_images extends repository {
      * Save settings for repository instance
      * $repo->set_option(array('api_key'=>'f2188bde132', 'name'=>'dongsheng'));
      *
-     * @param array $options settings
+     * @param mixed[] $options settings
      * @return bool
      */
     public function set_option($options = []) {
@@ -428,9 +432,10 @@ class repository_free_images extends repository {
     /**
      * For oauth like external authentication, when external repository direct user back to moodle,
      * this function will be called to set up token and token_secret
+     * @return void
      */
     public function callback() {
-        return parent::callback();
+        parent::callback();
     }
 
     /**
@@ -438,25 +443,27 @@ class repository_free_images extends repository {
      *
      * @param MoodleQuickForm $mform Moodle form (passed by reference)
      * @param string $classname repository class name
+     * @return void
      */
     public static function type_config_form($mform, $classname = 'repository') {
-        return parent::type_config_form($mform, $classname);
+        parent::type_config_form($mform, $classname);
     }
 
     /**
      * Edit/Create Instance Settings Moodle form
      *
      * @param moodleform $mform Moodle form (passed by reference)
+     * @return void
      */
     public static function instance_config_form($mform) {
-        return parent::instance_config_form($mform);
+        parent::instance_config_form($mform);
     }
 
     /**
      * Return names of the general options.
      * By default: no general option name
      *
-     * @return array
+     * @return string[]
      */
     public static function get_type_option_names() {
         return parent::get_type_option_names();
@@ -493,8 +500,6 @@ class repository_free_images extends repository {
      * @return bool false when file does not need synchronisation, true if it was synchronised
      */
     public function sync_reference(stored_file  $file ) {
-
         return parent::sync_reference($file);
-
     }
 }
