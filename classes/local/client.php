@@ -14,16 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * Base class responsible to communicate with image services. Each service is encapculated
- * on derived classes.
- *
- * @package repository_free_images
- * @copyright  2024 David OC <davidherzlos@gmail.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- *
- */
-
 namespace repository_free_images\local;
 
 defined('MOODLE_INTERNAL') || die();
@@ -34,11 +24,11 @@ require_once($CFG->dirroot . '/repository/free_images/lib.php');
 use repository_free_images;
 
 /**
- * Repository class to interact with external image services.
+ * Client class to manage communication with external images public APIS.
  *
- * @package    repository_free_images
+ * @package repository_free_images
  * @copyright  2024 David OC <davidherzlos@gmail.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class client {
 

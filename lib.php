@@ -14,15 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * This plugin is used to access free_images files
- *
- * @since Moodle 2.0
- * @package    repository_free_images
- * @copyright  2010 Dongsheng Cai {@link http://dongsheng.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
@@ -31,12 +22,11 @@ require_once($CFG->dirroot . '/repository/lib.php');
 use repository_free_images\local\client;
 
 /**
- * repository_free_images class
- * This is a class used to browse images from free_images
+ * Class for Free stock repository type which handles the main implementation
+ * of this repository plugin.
  *
- * @since Moodle 2.0
  * @package    repository_free_images
- * @copyright  2010 Dongsheng Cai {@link http://dongsheng.org}
+ * @copyright  2024 David OC <davidherzlos@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class repository_free_images extends repository {
