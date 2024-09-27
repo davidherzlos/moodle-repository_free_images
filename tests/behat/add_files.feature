@@ -8,7 +8,7 @@ Feature: Free images repository
     Given I log in as "admin"
     And I open my profile in edit mode
     And I click on "Add..." "button" in the "New picture" "form_row"
-    # Upload a new user picture using Free images repository.
+    # Upload a new user picture using free_images repository.
     And I follow "Free images"
     And I set the field "Search for:" to "cat"
     And I click on "Submit" "button"

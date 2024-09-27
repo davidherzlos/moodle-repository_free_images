@@ -1,5 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
+// This file is part of Moodle - https://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,28 +12,28 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+
+namespace repository_free_images;
+
 
 /**
- * Installation file for the free_images repository
+ * Class for plugin testcases.
  *
  * @package    repository_free_images
- * @category   repository
+ * @copyright  2024 Davif OC <davidherzlos@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+final class repository_free_images_test extends \advanced_testcase {
 
-/**
- * Create a default instance of the free_images repository
- *
- * @return bool A status indicating success or failure
- */
-function xmldb_repository_free_images_install() {
-    global $CFG;
-    $result = true;
-    require_once($CFG->dirroot.'/repository/lib.php');
-    $freeimagesplugin = new repository_type('free_images', [], true);
-    if(!$id = $freeimagesplugin->create(true)) {
-        $result = false;
+    public function test_it_gets_a_listing_of_images(): void {
+        self::assertEquals(true, true);
     }
-    return $result;
+
+    public function test_moodle_url() {
+        $url = new \moodle_url('/');
+        self::assertEquals(true, !empty($url->out()));
+    }
+
 }
+

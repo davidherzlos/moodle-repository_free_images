@@ -32,8 +32,6 @@ use core_privacy\local\request\contextlist;
 use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy Subsystem for repository_free_images implementing metadata and plugin providers.
  *
@@ -44,8 +42,7 @@ class provider implements
     \core_privacy\local\metadata\provider,
     \core_privacy\local\request\core_userlist_provider,
     \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\user_preference_provider
-{
+    \core_privacy\local\request\user_preference_provider {
 
     /**
      * Returns meta data about this system.
@@ -57,7 +54,7 @@ class provider implements
         $collection->add_external_location_link(
             'wikimedia.org',
             [
-                'search_text' => 'privacy:metadata:repository_free_images:search_text'
+                'search_text' => 'privacy:metadata:repository_free_images:search_text',
             ],
             'privacy:metadata:repository_free_images'
         );
